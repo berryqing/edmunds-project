@@ -47,8 +47,6 @@ type State = {
   // user selections
   dimensions: FieldRef[]; // group by fields
   filtersByTable: Record<string, FilterRow[]>; // per-table filters
-
-  activeRequestId?: string;
 };
 
 const initialState: State = {
@@ -58,7 +56,6 @@ const initialState: State = {
   status: "idle",
   dimensions: [],
   filtersByTable: {},
-  activeRequestId: undefined,
 };
 
 export const fetchOptions = createAsyncThunk<
@@ -87,12 +84,9 @@ const slice = createSlice({
   reducers: {
     setFactTable(state, action: PayloadAction<FactTable>) {
       state.factTable = action.payload;
-      state.joins = [];
-      state.tables = [];
-      state.dimensions = [];
-      state.filtersByTable = {};
-      state.status = "idle";
-      state.activeRequestId = undefined;
+      // 复现版：不做 invalidation（不清理维度/filters），让 UI 更容易进入“脏状态”
+      // （后面修复时我们会加）
+      state.joins = []; // 你业务是先选主表再选关联表，这里切主表就清空 joins
     },
 
     toggleJoin(state, action: PayloadAction<string>) {
@@ -100,13 +94,6 @@ const slice = createSlice({
       if (state.joins.includes(t))
         state.joins = state.joins.filter((x) => x !== t);
       else state.joins.push(t);
-
-      state.tables = [];
-      state.dimensions = [];
-      state.filtersByTable = {};
-
-      state.status = "idle";
-      state.activeRequestId = undefined;
     },
 
     // Dimensions = pick from all fields
@@ -162,21 +149,15 @@ const slice = createSlice({
   },
   extraReducers(builder) {
     builder
-      .addCase(fetchOptions.pending, (state, action) => {
+      .addCase(fetchOptions.pending, (state) => {
         state.status = "loading";
         state.error = undefined;
-        state.activeRequestId = action.meta.requestId;
       })
       .addCase(fetchOptions.fulfilled, (state, action) => {
-        // ignore the outdated responses
-        if (state.activeRequestId !== action.meta.requestId) return;
-
         state.status = "success";
-        state.tables = action.payload; // 
+        state.tables = action.payload; // ⚠️ 复现版：无条件接受，旧请求会覆盖新 options
       })
       .addCase(fetchOptions.rejected, (state, action) => {
-        // ignore the outdated failures, to prevent old failures from being overwritten
-        if (state.activeRequestId !== action.meta.requestId) return;
         state.status = "error";
         state.error = action.error?.message ?? "fetch failed";
       });
