@@ -50,7 +50,7 @@ type State = {
 };
 
 const initialState: State = {
-  factTable: "orders",
+  factTable: "" as FactTable,
   joins: [],
   tables: [],
   status: "idle",

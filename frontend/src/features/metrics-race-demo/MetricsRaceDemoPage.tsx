@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "../../app/store";
 import {
@@ -33,6 +33,10 @@ export default function MetricsRaceDemoPage() {
 
   const tablesInPlay = useMemo(() => s.tables.map((t) => t.name), [s.tables]);
 
+  // useEffect(() => {
+  //   dispatch(fetchOptions());
+  // }, [dispatch, s.factTable, s.joins]);
+
   return (
     <div
       style={{
@@ -55,17 +59,20 @@ export default function MetricsRaceDemoPage() {
           Fact table:
           <select
             value={s.factTable}
-            onChange={(e) =>
-              dispatch(setFactTable(e.target.value as FactTable))
-            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (!v) return; // 忽略空选项
+              dispatch(setFactTable(v as FactTable));
+            }}
           >
+            <option value="">-- Select fact table --</option>
             <option value="orders">orders</option>
             <option value="users">users</option>
             <option value="pageviews">pageviews</option>
           </select>
         </label>
 
-        <button onClick={() => dispatch(fetchOptions())}>Fetch Options</button>
+        {/* <button onClick={() => dispatch(fetchOptions())}>Fetch Options</button> */}
 
         <button
           onClick={() => {
@@ -99,7 +106,7 @@ export default function MetricsRaceDemoPage() {
         <div
           style={{ marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}
         >
-          {JOIN_CANDIDATES[s.factTable].map((j) => (
+          {(JOIN_CANDIDATES[s.factTable] ?? []).map((j) => (
             <label
               key={j}
               style={{ display: "flex", gap: 6, alignItems: "center" }}
