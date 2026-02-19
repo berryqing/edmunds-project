@@ -41,8 +41,8 @@ export default function MetricsRaceDemoPage() {
 
   const tablesInPlay = useMemo(() => s.tables.map((t) => t.name), [s.tables]);
 
-  // 复现分支：不自动 fetch（保持你现在的行为）
-  useEffect(() => { dispatch(fetchOptions()); }, [dispatch, s.factTable, s.joins]);
+  // 不自动 fetch（保持你现在的行为）
+  // useEffect(() => { dispatch(fetchOptions()); }, [dispatch, s.factTable, s.joins]);
 
   return (
     <div className={styles.page}>
