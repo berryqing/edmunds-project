@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "../../app/store";
 import {
@@ -33,6 +33,10 @@ export default function MetricsRaceDemoPage() {
 
   const tablesInPlay = useMemo(() => s.tables.map((t) => t.name), [s.tables]);
 
+  useEffect(() => {
+    dispatch(fetchOptions());
+  }, [dispatch, s.factTable, s.joins]);
+
   return (
     <div
       style={{
@@ -65,7 +69,7 @@ export default function MetricsRaceDemoPage() {
           </select>
         </label>
 
-        <button onClick={() => dispatch(fetchOptions())}>Fetch Options</button>
+        {/* <button onClick={() => dispatch(fetchOptions())}>Fetch Options</button> */}
 
         <button
           onClick={() => {
