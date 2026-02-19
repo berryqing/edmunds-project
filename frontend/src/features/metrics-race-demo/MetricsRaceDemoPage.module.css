@@ -1,0 +1,123 @@
+.page {
+  padding: 16px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto;
+}
+
+.upstreamRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.labelRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.muted {
+  opacity: 0.75;
+}
+
+.joinBlock {
+  margin-top: 12px;
+}
+
+.joinRow {
+  margin-top: 6px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.joinItem {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.hr {
+  margin: 16px 0;
+}
+
+.twoColGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.panelTitle {
+  margin-top: 0;
+}
+
+.panelHint {
+  opacity: 0.75;
+  margin-bottom: 8px;
+}
+
+.emptyHint {
+  opacity: 0.7;
+}
+
+.scrollList {
+  max-height: 260px;
+  overflow: auto;
+  display: grid;
+  gap: 6px;
+}
+
+.checkRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dimType {
+  opacity: 0.7;
+}
+
+.filtersList {
+  display: grid;
+  gap: 14px;
+}
+
+.filterBlock {
+  border: 1px dashed #bbb;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.filterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filterRows {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.filterRow {
+  display: grid;
+  grid-template-columns: 1fr 110px 1fr 70px;
+  gap: 8px;
+}
+
+.reproTip {
+  margin-top: 12px;
+  opacity: 0.8;
+}
+
+.debugPre {
+  white-space: pre-wrap;
+}

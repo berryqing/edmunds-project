@@ -75,10 +75,18 @@ router.get("/options", async (req, res) => {
           { table: "users", field: "signup_at", type: "date" },
         ],
       },
+      {
+        name: "pageviews",
+        fields: [
+          { table: "pageviews", field: "event_id", type: "number" },
+          { table: "pageviews", field: "user_id", type: "number" },
+          { table: "pageviews", field: "url", type: "string" },
+          { table: "pageviews", field: "ts", type: "date" },
+        ],
+      },
     ].filter((t) => t.name === factTable || joins.includes(t.name)),
     meta: { delayMs },
   });
-
 });
 
 export default router;

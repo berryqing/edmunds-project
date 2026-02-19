@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "../../app/store";
 import {
@@ -12,16 +12,24 @@ import {
   updateFilterRow,
   type FactTable,
   type FieldRef,
+  type FilterRow,
   type Operator,
+  type TableOptions,
 } from "./optionsSlice";
+
+import styles from "./MetricsRaceDemoPage.module.css";
+
+import UpstreamBar from "./components/UpstreamBar";
+import JoinSelector from "./components/JoinSelector";
+import DimensionsPanel from "./components/DimensionsPanel";
+import FiltersPanel from "./components/FiltersPanel";
+import DebugState from "./components/DebugState";
 
 const JOIN_CANDIDATES: Record<FactTable, string[]> = {
   orders: ["users", "pageviews"],
   users: ["orders", "pageviews"],
   pageviews: ["orders", "users"],
 };
-
-const OPS: Operator[] = ["=", "!=", ">", ">=", "<", "<=", "IN", "LIKE"];
 
 export default function MetricsRaceDemoPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -33,308 +41,76 @@ export default function MetricsRaceDemoPage() {
 
   const tablesInPlay = useMemo(() => s.tables.map((t) => t.name), [s.tables]);
 
-  // useEffect(() => {
-  //   dispatch(fetchOptions());
-  // }, [dispatch, s.factTable, s.joins]);
+  // 复现分支：不自动 fetch（保持你现在的行为）
+  useEffect(() => { dispatch(fetchOptions()); }, [dispatch, s.factTable, s.joins]);
 
   return (
-    <div
-      style={{
-        padding: 16,
-        fontFamily: "system-ui, -apple-system, Segoe UI, Roboto",
-      }}
-    >
+    <div className={styles.page}>
       <h2>Metrics Config Race Demo (Repro Only)</h2>
 
-      {/* Upstream */}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-      >
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          Fact table:
-          <select
-            value={s.factTable}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (!v) return; // 忽略空选项
-              dispatch(setFactTable(v as FactTable));
-            }}
-          >
-            <option value="">-- Select fact table --</option>
-            <option value="orders">orders</option>
-            <option value="users">users</option>
-            <option value="pageviews">pageviews</option>
-          </select>
-        </label>
+      <UpstreamBar
+        styles={styles}
+        factTable={s.factTable}
+        status={s.status}
+        onChangeFactTable={(t) => dispatch(setFactTable(t))}
+        onForceRace={() => {
+          dispatch(setFactTable("orders"));
+          dispatch(fetchOptions());
 
-        {/* <button onClick={() => dispatch(fetchOptions())}>Fetch Options</button> */}
-
-        <button
-          onClick={() => {
-            // 第一次请求：orders
-            dispatch(setFactTable("orders"));
+          setTimeout(() => {
+            dispatch(setFactTable("users"));
             dispatch(fetchOptions());
+          }, 10);
 
-            // 立即切换配置并再发请求
-            setTimeout(() => {
-              dispatch(setFactTable("users"));
-              dispatch(fetchOptions());
-            }, 10);
-
-            setTimeout(() => {
-              dispatch(setFactTable("pageviews"));
-              dispatch(fetchOptions());
-            }, 20);
-          }}
-        >
-          Force Race Condition
-        </button>
-
-        <span style={{ opacity: 0.75 }}>
-          status: <b>{s.status}</b>
-        </span>
-      </div>
-
-      {/* Joins */}
-      <div style={{ marginTop: 12 }}>
-        <b>Join tables (select after fact table):</b>
-        <div
-          style={{ marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}
-        >
-          {(JOIN_CANDIDATES[s.factTable] ?? []).map((j) => (
-            <label
-              key={j}
-              style={{ display: "flex", gap: 6, alignItems: "center" }}
-            >
-              <input
-                type="checkbox"
-                checked={s.joins.includes(j)}
-                onChange={() => dispatch(toggleJoin(j))}
-              />
-              {j}
-            </label>
-          ))}
-        </div>
-        <div style={{ marginTop: 6, opacity: 0.75 }}>
-          current joins: {s.joins.length ? s.joins.join(", ") : "—"}
-        </div>
-      </div>
-
-      <hr style={{ margin: "16px 0" }} />
-
-      {/* Downstream options */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 16,
-          alignItems: "start",
+          setTimeout(() => {
+            dispatch(setFactTable("pageviews"));
+            dispatch(fetchOptions());
+          }, 20);
         }}
-      >
-        {/* Dimensions = choose from all fields */}
-        <section
-          style={{ border: "1px solid #ddd", borderRadius: 10, padding: 12 }}
-        >
-          <h3 style={{ marginTop: 0 }}>Dimensions (Group By)</h3>
-          <div style={{ opacity: 0.75, marginBottom: 8 }}>
-            (Dimensions are selected from available fields)
-          </div>
+      />
 
-          {allFields.length === 0 ? (
-            <div style={{ opacity: 0.7 }}>
-              Click “Fetch Options” to load fields.
-            </div>
-          ) : (
-            <div
-              style={{
-                maxHeight: 260,
-                overflow: "auto",
-                display: "grid",
-                gap: 6,
-              }}
-            >
-              {allFields.map((f) => {
-                const key = `${f.table}.${f.field}`;
-                const checked = s.dimensions.some(
-                  (d) => `${d.table}.${d.field}` === key,
-                );
-                return (
-                  <label
-                    key={key}
-                    style={{ display: "flex", gap: 8, alignItems: "center" }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => dispatch(toggleDimension(f))}
-                    />
-                    <span>
-                      {f.table}.{f.field}{" "}
-                      <span style={{ opacity: 0.7 }}>({f.type})</span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          )}
-        </section>
+      <JoinSelector
+        styles={styles}
+        factTable={s.factTable}
+        joins={s.joins}
+        joinCandidates={JOIN_CANDIDATES}
+        onToggleJoin={(j) => dispatch(toggleJoin(j))}
+      />
 
-        {/* Filters per table */}
-        <section
-          style={{ border: "1px solid #ddd", borderRadius: 10, padding: 12 }}
-        >
-          <h3 style={{ marginTop: 0 }}>Filters (WHERE Builder)</h3>
-          <div style={{ opacity: 0.75, marginBottom: 8 }}>
-            Each table has its own filters: field / operator / value
-          </div>
+      <hr className={styles.hr} />
 
-          {tablesInPlay.length === 0 ? (
-            <div style={{ opacity: 0.7 }}>
-              Click “Fetch Options” to load tables & fields.
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: 14 }}>
-              {tablesInPlay.map((table) => (
-                <TableFilters
-                  key={table}
-                  table={table}
-                  dispatch={dispatch}
-                  state={s}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+      <div className={styles.twoColGrid}>
+        <DimensionsPanel
+          styles={styles}
+          allFields={allFields}
+          dimensions={s.dimensions}
+          onToggleDimension={(f) => dispatch(toggleDimension(f))}
+        />
+
+        <FiltersPanel
+          styles={styles}
+          tablesInPlay={tablesInPlay}
+          tables={s.tables as TableOptions[]}
+          filtersByTable={s.filtersByTable as Record<string, FilterRow[]>}
+          onAddFilterRow={(table) => dispatch(addFilterRow({ table }))}
+          onUpdateFilterRow={(table, id, patch) =>
+            dispatch(updateFilterRow({ table, id, patch }))
+          }
+          onRemoveFilterRow={(table, id) =>
+            dispatch(removeFilterRow({ table, id }))
+          }
+        />
       </div>
 
-      <hr style={{ margin: "16px 0" }} />
+      <hr className={styles.hr} />
 
-      <details>
-        <summary>Debug: current state</summary>
-        <pre style={{ whiteSpace: "pre-wrap" }}>
-          {JSON.stringify(s, null, 2)}
-        </pre>
-      </details>
+      <DebugState styles={styles} state={s} />
 
-      <p style={{ marginTop: 12, opacity: 0.8 }}>
-        Repro tip: 快速切换 fact table / joins，然后连续点 “Fetch
-        Options”，你会看到旧请求返回覆盖最新 tables， 导致字段列表/filters
-        可选项“复活”。
+      <p className={styles.reproTip}>
+        Repro tip: 快速切换 fact table /
+        joins，然后连续触发请求，你会看到旧请求返回覆盖最新 tables，
+        导致字段列表/filters 可选项“复活”。
       </p>
-    </div>
-  );
-}
-
-function TableFilters({
-  table,
-  dispatch,
-  state,
-}: {
-  table: string;
-  dispatch: AppDispatch;
-  state: ReturnType<typeof selectOptionsState>;
-}) {
-  const tableFields = state.tables.find((t) => t.name === table)?.fields ?? [];
-  const rows = state.filtersByTable[table] ?? [];
-
-  return (
-    <div style={{ border: "1px dashed #bbb", borderRadius: 10, padding: 10 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <b>{table} filters</b>
-        <button onClick={() => dispatch(addFilterRow({ table }))}>
-          + Add filter
-        </button>
-      </div>
-
-      {rows.length === 0 ? (
-        <div style={{ marginTop: 8, opacity: 0.7 }}>No filters.</div>
-      ) : (
-        <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-          {rows.map((r) => (
-            <div
-              key={r.id}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 110px 1fr 70px",
-                gap: 8,
-              }}
-            >
-              {/* field */}
-              <select
-                value={r.field}
-                onChange={(e) =>
-                  dispatch(
-                    updateFilterRow({
-                      table,
-                      id: r.id,
-                      patch: { field: e.target.value },
-                    }),
-                  )
-                }
-              >
-                <option value="">Select field</option>
-                {tableFields.map((f) => (
-                  <option key={`${f.table}.${f.field}`} value={f.field}>
-                    {f.field} ({f.type})
-                  </option>
-                ))}
-              </select>
-
-              {/* operator */}
-              <select
-                value={r.op}
-                onChange={(e) =>
-                  dispatch(
-                    updateFilterRow({
-                      table,
-                      id: r.id,
-                      patch: { op: e.target.value as Operator },
-                    }),
-                  )
-                }
-              >
-                {OPS.map((op) => (
-                  <option key={op} value={op}>
-                    {op}
-                  </option>
-                ))}
-              </select>
-
-              {/* value */}
-              <input
-                placeholder="value"
-                value={r.value}
-                onChange={(e) =>
-                  dispatch(
-                    updateFilterRow({
-                      table,
-                      id: r.id,
-                      patch: { value: e.target.value },
-                    }),
-                  )
-                }
-              />
-
-              <button
-                onClick={() => dispatch(removeFilterRow({ table, id: r.id }))}
-              >
-                Del
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
